@@ -1,6 +1,6 @@
 const CACHE_NAME = 'nutriprompt-v1';
 const ASSETS = [
-  './nutricion.html',
+  './index.html',
   './manifest.json'
 ];
 
@@ -23,7 +23,7 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   event.respondWith(
     caches.match(event.request).then(cached => {
-      return cached || fetch(event.request).catch(() => caches.match('./nutricion.html'));
+      return cached || fetch(event.request).catch(() => caches.match('./index.html'));
     })
   );
 });

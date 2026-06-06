@@ -2,7 +2,7 @@
   "name": "Generador de Prompt Nutricional",
   "short_name": "NutriPrompt",
   "description": "Genera prompts nutricionales personalizados con tu perfil biométrico",
-  "start_url": "./nutricion.html",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0f1117",
   "theme_color": "#0f1117",
