@@ -52,19 +52,7 @@
     #prompt-output:focus { border-color: #4f8ef7; }
 
     .highlight { color: #7fb3ff; font-weight: 600; }
-    #copy-image-btn.copied { background-color: #27ae60 !important; border-color: #27ae60 !important; }
-    #image-drop-zone {
-      border: 1.5px dashed #444;
-      border-radius: 12px;
-      padding: 28px;
-      text-align: center;
-      cursor: pointer;
-      color: #666;
-      transition: border-color .18s, color .18s;
-      background: #13151f;
-    }
-    #image-drop-zone:hover,
-    #image-drop-zone.drag-over { border-color: #4f8ef7; color: #aaa; }
+    #copy-btn.copied { background-color: #27ae60 !important; border-color: #27ae60 !important; }
 
     /* ---- Measurement cards ---- */
     .measurements-track {
@@ -93,17 +81,6 @@
     }
     .measurement-card.is-selected { border-color: #4f8ef7; }
     .measurement-card .card-data { flex: 1; }
-    #mediciones-fixed-btn {
-      position: fixed;
-      top: 16px;
-      right: 16px;
-      z-index: 1055;
-      background: #1a1d27;
-      border: 1.5px solid #333;
-      color: #aaa;
-      transition: border-color .18s, color .18s;
-    }
-    #mediciones-fixed-btn:hover { border-color: #4f8ef7; color: #fff; }
     #editMeasurementModal { z-index: 1065; }
     #scroll-btn {
       position: fixed;
@@ -129,12 +106,6 @@
 </head>
 <body>
 
-<!-- BOTÓN FIJO MEDICIONES -->
-<button id="mediciones-fixed-btn" class="btn btn-sm fw-semibold px-3"
-        data-bs-toggle="modal" data-bs-target="#medicionesModal">
-  Mediciones
-</button>
-
 <!-- BOTÓN SCROLL -->
 <button id="scroll-btn" onclick="handleScroll()" title="Bajar"><svg id="scroll-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,5 8,11 14,5"/></svg></button>
 
@@ -159,7 +130,7 @@
       <button class="choice-btn" onclick="selectMeal('Desayuno')">Desayuno</button>
       <button class="choice-btn" onclick="selectMeal('Comida')">Comida</button>
       <button class="choice-btn" onclick="selectMeal('Cena')">Cena</button>
-      <button class="choice-btn" onclick="selectMeal('Snack')">Snack</button>
+      <button class="choice-btn" onclick="selectMeal('Snack')">Merienda</button>
     </div>
   </div>
 
@@ -201,31 +172,17 @@
   <div id="output-section" style="display:none;">
     <hr class="border-secondary my-4" />
     <div class="d-flex align-items-center justify-content-between mb-2">
-      <span class="text-uppercase text-secondary" style="font-size:.75rem; letter-spacing:2px;">Prompt generado</span>
+      <button class="btn btn-sm fw-semibold px-3"
+              style="background:#1a1d27; border:1.5px solid #333; color:#aaa;"
+              data-bs-toggle="modal" data-bs-target="#medicionesModal">
+        Mediciones
+      </button>
       <button id="copy-btn" class="btn btn-primary btn-sm fw-semibold px-3" onclick="copyPrompt()">Copiar</button>
     </div>
     <div id="carbs-output-warning" class="alert alert-danger py-2 small mb-2" style="display:none;">
       El déficit seleccionado no deja margen para carbohidratos. Reduce el % de déficit.
     </div>
     <pre id="prompt-output" contenteditable="true" spellcheck="false"></pre>
-
-    <!-- ZONA DE IMAGEN -->
-    <div id="image-upload-area" class="mt-3">
-      <div id="image-drop-zone"
-           onclick="document.getElementById('image-file-input').click()"
-           ondragover="event.preventDefault(); this.classList.add('drag-over')"
-           ondragleave="this.classList.remove('drag-over')"
-           ondrop="handleImageDrop(event)">
-        <span style="font-size:.85rem;">Haz clic o arrastra aquí la foto del plato</span>
-      </div>
-      <input type="file" id="image-file-input" accept="image/*" style="display:none;" onchange="loadImage(event)" />
-      <div id="image-preview-container" style="display:none; margin-top:12px; position:relative; display:none;">
-        <img id="image-preview" onclick="copyImage()" style="max-width:100%; border-radius:10px; max-height:300px; object-fit:contain; display:block; margin:0 auto; cursor:pointer;" title="Toca para copiar la imagen" />
-        <button onclick="clearImage()" title="Quitar foto" style="position:absolute; top:8px; right:8px; width:28px; height:28px; border-radius:50%; background:rgba(30,30,40,0.82); border:1.5px solid #555; color:#aaa; font-size:.85rem; line-height:1; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0;">
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="1" y1="1" x2="11" y2="11"/><line x1="11" y1="1" x2="1" y2="11"/></svg>
-        </button>
-      </div>
-    </div>
   </div>
 
   <!-- BARRA DE ACCIONES -->
@@ -523,81 +480,6 @@ TOTALES: X kcal | Proteínas: X g | Carbohidratos: X g | Grasas: X g | Fibra: X 
         btn.classList.remove('copied');
       }, 2000);
     });
-  }
-
-  // ---- Image upload ----
-  let _imageFile = null;
-
-  function loadImage(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    _setImageFile(file);
-  }
-
-  function handleImageDrop(event) {
-    event.preventDefault();
-    document.getElementById('image-drop-zone').classList.remove('drag-over');
-    const file = event.dataTransfer.files[0];
-    if (file && file.type.startsWith('image/')) _setImageFile(file);
-  }
-
-  function clearImage() {
-    _imageFile = null;
-    document.getElementById('image-file-input').value = '';
-    document.getElementById('image-preview').src = '';
-    document.getElementById('image-preview-container').style.display = 'none';
-    document.getElementById('image-drop-zone').style.display = 'block';
-  }
-
-  function _setImageFile(file) {
-    _imageFile = file;
-    const url = URL.createObjectURL(file);
-    document.getElementById('image-preview').src = url;
-    document.getElementById('image-preview-container').style.display = 'block';
-    document.getElementById('image-drop-zone').style.display = 'none';
-  }
-
-  function copyImage() {
-    if (!_imageFile) return;
-    const img = document.getElementById('image-preview');
-    const canvas = document.createElement('canvas');
-    canvas.width = img.naturalWidth;
-    canvas.height = img.naturalHeight;
-    canvas.getContext('2d').drawImage(img, 0, 0);
-
-    const flashImg = () => {
-      img.style.opacity = '0.45';
-      setTimeout(() => { img.style.opacity = '1'; }, 1200);
-    };
-
-    canvas.toBlob(async (blob) => {
-      // 1. Intentar portapapeles (Chrome/Edge)
-      if (navigator.clipboard && window.ClipboardItem) {
-        try {
-          await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-          flashImg();
-          return;
-        } catch(e) {}
-      }
-      // 2. Intentar Web Share API (móvil: Firefox Android, Safari iOS, etc.)
-      if (navigator.share) {
-        try {
-          const file = new File([blob], 'plato.png', { type: 'image/png' });
-          await navigator.share({ files: [file], title: 'Foto del plato' });
-          return;
-        } catch(e) {
-          if (e.name !== 'AbortError') {
-            // El usuario canceló el share, no mostrar error
-          }
-          return;
-        }
-      }
-      // 3. Fallback: descargar la imagen
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'plato.png';
-      a.click();
-    }, 'image/png');
   }
 
   function restart() {
