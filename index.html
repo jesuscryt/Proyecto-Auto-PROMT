@@ -142,12 +142,6 @@
 
   <!-- CABECERA -->
   <div class="text-center mb-5">
-    <h1 class="fw-bold text-white mb-2" style="font-size:2.1rem; letter-spacing:.5px;">
-      Generador de Prompt Nutricional
-    </h1>
-    <p class="text-secondary mb-4" style="font-size:1rem;">
-      Selecciona el tipo de comida y tu actividad de hoy
-    </p>
     <a id="gemini-btn"
        href="https://gemini.google.com" target="_blank" rel="noopener"
        class="btn btn-primary fw-bold px-5 py-3 text-white"
@@ -159,7 +153,7 @@
   <!-- PASO 1 -->
   <div id="step1-section">
     <p class="text-uppercase text-secondary text-center mb-3" style="font-size:.8rem; letter-spacing:2px;">
-      Paso 1 — Tipo de comida
+      Paso 1 - Tipo de comida
     </p>
     <div class="d-flex flex-wrap gap-3 justify-content-center">
       <button class="choice-btn" onclick="selectMeal('Desayuno')">Desayuno</button>
@@ -173,7 +167,7 @@
   <div id="step-consumption-section" style="display:none;">
     <hr class="border-secondary my-4" />
     <p class="text-uppercase text-secondary text-center mb-3" style="font-size:.8rem; letter-spacing:2px;">
-      Paso 2 — Consumo previo de hoy
+      Paso 2 - Consumo previo de hoy
     </p>
     <div class="d-flex flex-column align-items-center gap-3">
       <input type="text" id="consumption-input"
@@ -225,11 +219,11 @@
         <span style="font-size:.85rem;">Haz clic o arrastra aquí la foto del plato</span>
       </div>
       <input type="file" id="image-file-input" accept="image/*" style="display:none;" onchange="loadImage(event)" />
-      <div id="image-preview-container" style="display:none; margin-top:12px;">
+      <div id="image-preview-container" style="display:none; margin-top:12px; position:relative; display:none;">
         <img id="image-preview" onclick="copyImage()" style="max-width:100%; border-radius:10px; max-height:300px; object-fit:contain; display:block; margin:0 auto; cursor:pointer;" title="Toca para copiar la imagen" />
-        <div class="d-flex gap-2 mt-2 justify-content-end">
-          <button class="btn btn-outline-secondary btn-sm" onclick="clearImage()">Quitar foto</button>
-        </div>
+        <button onclick="clearImage()" title="Quitar foto" style="position:absolute; top:8px; right:8px; width:28px; height:28px; border-radius:50%; background:rgba(30,30,40,0.82); border:1.5px solid #555; color:#aaa; font-size:.85rem; line-height:1; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0;">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="1" y1="1" x2="11" y2="11"/><line x1="11" y1="1" x2="1" y2="11"/></svg>
+        </button>
       </div>
     </div>
   </div>
@@ -547,20 +541,20 @@ TOTALES: X kcal | Proteínas: X g | Carbohidratos: X g | Grasas: X g | Fibra: X 
     if (file && file.type.startsWith('image/')) _setImageFile(file);
   }
 
-  function _setImageFile(file) {
-    _imageFile = file;
-    const url = URL.createObjectURL(file);
-    document.getElementById('image-preview').src = url;
-    document.getElementById('image-preview-container').style.display = 'block';
-    document.getElementById('image-drop-zone').style.display = 'none';
-  }
-
   function clearImage() {
     _imageFile = null;
     document.getElementById('image-file-input').value = '';
     document.getElementById('image-preview').src = '';
     document.getElementById('image-preview-container').style.display = 'none';
     document.getElementById('image-drop-zone').style.display = 'block';
+  }
+
+  function _setImageFile(file) {
+    _imageFile = file;
+    const url = URL.createObjectURL(file);
+    document.getElementById('image-preview').src = url;
+    document.getElementById('image-preview-container').style.display = 'block';
+    document.getElementById('image-drop-zone').style.display = 'none';
   }
 
   function copyImage() {
@@ -570,15 +564,39 @@ TOTALES: X kcal | Proteínas: X g | Carbohidratos: X g | Grasas: X g | Fibra: X 
     canvas.width = img.naturalWidth;
     canvas.height = img.naturalHeight;
     canvas.getContext('2d').drawImage(img, 0, 0);
+
+    const flashImg = () => {
+      img.style.opacity = '0.45';
+      setTimeout(() => { img.style.opacity = '1'; }, 1200);
+    };
+
     canvas.toBlob(async (blob) => {
-      try {
-        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-        img.style.opacity = '0.45';
-        img.title = 'Imagen copiada';
-        setTimeout(() => { img.style.opacity = '1'; img.title = 'Toca para copiar la imagen'; }, 1200);
-      } catch(e) {
-        alert('No se pudo copiar la imagen. Usa Chrome o Edge y asegúrate de haber dado permiso al portapapeles.');
+      // 1. Intentar portapapeles (Chrome/Edge)
+      if (navigator.clipboard && window.ClipboardItem) {
+        try {
+          await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+          flashImg();
+          return;
+        } catch(e) {}
       }
+      // 2. Intentar Web Share API (móvil: Firefox Android, Safari iOS, etc.)
+      if (navigator.share) {
+        try {
+          const file = new File([blob], 'plato.png', { type: 'image/png' });
+          await navigator.share({ files: [file], title: 'Foto del plato' });
+          return;
+        } catch(e) {
+          if (e.name !== 'AbortError') {
+            // El usuario canceló el share, no mostrar error
+          }
+          return;
+        }
+      }
+      // 3. Fallback: descargar la imagen
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'plato.png';
+      a.click();
     }, 'image/png');
   }
 
