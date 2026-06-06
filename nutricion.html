@@ -1,0 +1,742 @@
+﻿<!DOCTYPE html>
+<html lang="es" data-bs-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Generador de Prompt Nutricional</title>
+
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0f1117" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  <meta name="apple-mobile-web-app-title" content="NutriPrompt" />
+  
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+  <style>
+    body { background-color: #0f1117; }
+
+    .choice-btn {
+      border: 1.5px solid #333;
+      background: #1a1d27;
+      color: #c0c0c0;
+      border-radius: 14px;
+      font-size: 1.15rem;
+      font-weight: 500;
+      padding: 18px 44px;
+      transition: all 0.18s ease;
+    }
+    .choice-btn:hover  { border-color: #4f8ef7; color: #fff; background: #1e2235; }
+    .choice-btn.active { border-color: #4f8ef7; background: #1e2a4a; color: #7fb3ff; }
+
+    #gemini-btn {
+      background: linear-gradient(135deg, #1a73e8, #8e44e8);
+      border: none;
+      transition: opacity 0.18s, transform 0.18s;
+    }
+    #gemini-btn:hover { opacity: 0.88; transform: translateY(-1px); color: #fff; }
+
+    #prompt-output {
+      background: #13151f;
+      border: 1px solid #252836;
+      border-radius: 12px;
+      padding: 28px 32px;
+      font-size: 0.875rem;
+      line-height: 1.75;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: #d0d0d0;
+    }
+
+    .highlight { color: #7fb3ff; font-weight: 600; }
+    #copy-btn.copied { background-color: #27ae60 !important; border-color: #27ae60 !important; }
+
+    /* ---- Measurement cards ---- */
+    .measurements-track {
+      display: flex;
+      gap: 20px;
+      overflow-x: auto;
+      padding-bottom: 14px;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+    }
+    .measurements-track::-webkit-scrollbar { height: 6px; }
+    .measurements-track::-webkit-scrollbar-track { background: #1a1d27; border-radius: 3px; }
+    .measurements-track::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+    .measurements-track::-webkit-scrollbar-thumb:hover { background: #4f8ef7; }
+    .measurement-card {
+      min-width: 260px;
+      max-width: 260px;
+      scroll-snap-align: start;
+      background: #1a1d27;
+      border: 1.5px solid #2a2d3a;
+      border-radius: 14px;
+      overflow: hidden;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .measurement-card.is-selected { border-color: #4f8ef7; }
+    .measurement-card .card-data { flex: 1; }
+    #mediciones-fixed-btn {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 1055;
+      background: #1a1d27;
+      border: 1.5px solid #333;
+      color: #aaa;
+      transition: border-color .18s, color .18s;
+    }
+    #mediciones-fixed-btn:hover { border-color: #4f8ef7; color: #fff; }
+    #restart-fixed-btn {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      z-index: 1055;
+      background: #1a1d27;
+      border: 1.5px solid #333;
+      color: #aaa;
+      transition: border-color .18s, color .18s;
+    }
+    #restart-fixed-btn:hover { border-color: #aaa; color: #fff; }
+    #editMeasurementModal { z-index: 1065; }
+  </style>
+</head>
+<body>
+
+<!-- BOTÓN FIJO MEDICIONES -->
+<button id="mediciones-fixed-btn" class="btn btn-sm fw-semibold px-3"
+        data-bs-toggle="modal" data-bs-target="#medicionesModal">
+  📊 Mediciones
+</button>
+
+<!-- BOTÓN FIJO EMPEZAR DE NUEVO -->
+<button id="restart-fixed-btn" class="btn btn-sm fw-semibold px-3"
+        style="display:none;" onclick="restart()">
+  &#x21BA; Empezar de nuevo
+</button>
+
+<div class="container py-5" style="max-width:860px;">
+
+  <!-- CABECERA -->
+  <div class="text-center mb-5">
+    <h1 class="fw-bold text-white mb-2" style="font-size:2.1rem; letter-spacing:.5px;">
+      Generador de Prompt Nutricional
+    </h1>
+    <p class="text-secondary mb-4" style="font-size:1rem;">
+      Selecciona el tipo de comida y tu actividad de hoy
+    </p>
+    <a id="gemini-btn"
+       href="https://gemini.google.com" target="_blank" rel="noopener"
+       class="btn btn-primary fw-bold px-5 py-3 text-white"
+       style="display:none; font-size:1rem; border-radius:12px;">
+      Abrir Gemini ↗
+    </a>
+  </div>
+
+  <!-- PASO 1 -->
+  <div id="step1-section">
+    <p class="text-uppercase text-secondary text-center mb-3" style="font-size:.8rem; letter-spacing:2px;">
+      Paso 1 — Tipo de comida
+    </p>
+    <div class="d-flex flex-wrap gap-3 justify-content-center">
+      <button class="choice-btn" onclick="selectMeal('Desayuno')">Desayuno</button>
+      <button class="choice-btn" onclick="selectMeal('Comida')">Comida</button>
+      <button class="choice-btn" onclick="selectMeal('Cena')">Cena</button>
+      <button class="choice-btn" onclick="selectMeal('Snack')">Snack</button>
+    </div>
+  </div>
+
+  <!-- PASO 2: Consumo previo (solo si no es Desayuno) -->
+  <div id="step-consumption-section" style="display:none;">
+    <hr class="border-secondary my-4" />
+    <p class="text-uppercase text-secondary text-center mb-3" style="font-size:.8rem; letter-spacing:2px;">
+      Paso 2 — Consumo previo de hoy
+    </p>
+    <div class="d-flex flex-column align-items-center gap-3">
+      <input type="text" id="consumption-input"
+             class="form-control bg-dark border-secondary text-light"
+             style="max-width:440px;"
+             placeholder="Ej: Llevo consumidas 1200 kcal y 80g de proteína"
+             onkeydown="if(event.key==='Enter') confirmConsumption()" />
+      <button class="btn btn-primary fw-semibold px-4 py-2" onclick="confirmConsumption()">
+        Continuar &rarr;
+      </button>
+    </div>
+  </div>
+
+  <!-- PASO 3: Actividad -->
+  <div id="step2-section" style="display:none;">
+    <hr class="border-secondary my-4" />
+    <p id="activity-step-label"
+       class="text-uppercase text-secondary text-center mb-3"
+       style="font-size:.8rem; letter-spacing:2px;">
+      Paso 3 — Actividad de hoy
+    </p>
+    <div class="d-flex flex-wrap gap-3 justify-content-center">
+      <button class="choice-btn" onclick="selectActivity('Día sedentario en casa', this)">Día sedentario</button>
+      <button class="choice-btn" onclick="selectActivity('Día de Gimnasio (Pecho/Hombro/Tríceps)', this)">Pecho / Hombro / Tríceps</button>
+      <button class="choice-btn" onclick="selectActivity('Día de Gimnasio (Espalda/Bíceps)', this)">Espalda / Bíceps</button>
+      <button class="choice-btn" onclick="selectActivity('Día de Gimnasio (Pierna)', this)">Pierna</button>
+      <button class="choice-btn" onclick="selectActivity('Día de Cardio', this)">Cardio</button>
+    </div>
+  </div>
+
+  <!-- OUTPUT -->
+  <div id="output-section" style="display:none;">
+    <hr class="border-secondary my-4" />
+    <div class="d-flex align-items-center justify-content-between mb-2">
+      <span class="text-uppercase text-secondary" style="font-size:.75rem; letter-spacing:2px;">Prompt generado</span>
+      <button id="copy-btn" class="btn btn-primary btn-sm fw-semibold px-3" onclick="copyPrompt()">Copiar</button>
+    </div>
+    <div id="carbs-output-warning" class="alert alert-danger py-2 small mb-2" style="display:none;">
+      ⚠️ El déficit seleccionado no deja margen para carbohidratos. Reduce el % de déficit.
+    </div>
+    <pre id="prompt-output"></pre>
+  </div>
+
+  <!-- BARRA DE ACCIONES -->
+  <div id="action-bar" style="display:none;"></div>
+
+</div>
+
+<!-- MODAL EDITAR / AÑADIR PESAJE -->
+<div class="modal fade" id="editMeasurementModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width:580px;">
+    <div class="modal-content border-secondary" style="background:#13151f;">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title text-white fw-bold" id="editModalTitle">Pesaje</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" style="padding:24px;">
+        <div class="row g-3">
+          <div class="col-6"><label class="form-label text-secondary small">Edad (años)</label><input id="mf-edad" type="text" inputmode="numeric" class="form-control bg-dark border-secondary text-light" oninput="validateMeasField(this)" /><div class="invalid-feedback">Número entero válido (1–120)</div></div>
+          <div class="col-6"><label class="form-label text-secondary small">Sexo</label><input id="mf-sexo" type="text" class="form-control bg-dark border-secondary text-light" oninput="validateMeasField(this)" /><div class="invalid-feedback">Campo obligatorio</div></div>
+          <div class="col-6"><label class="form-label text-secondary small">Altura (cm)</label><input id="mf-altura" type="text" inputmode="numeric" class="form-control bg-dark border-secondary text-light" oninput="validateMeasField(this)" /><div class="invalid-feedback">Número entero válido (50–300)</div></div>
+          <div class="col-6"><label class="form-label text-secondary small">Peso actual (kg)</label><input id="mf-peso" type="text" inputmode="decimal" class="form-control bg-dark border-secondary text-light" oninput="validateMeasField(this)" /><div class="invalid-feedback">Número positivo (ej: 85 ó 85,5)</div></div>
+          <div class="col-6"><label class="form-label text-secondary small">I.M.C.</label><input id="mf-imc" type="text" inputmode="decimal" class="form-control bg-dark border-secondary text-light" oninput="validateMeasField(this)" /><div class="invalid-feedback">Número positivo (ej: 42,2)</div></div>
+          <div class="col-6"><label class="form-label text-secondary small">Grasa corporal (%)</label><input id="mf-grasa" type="text" inputmode="decimal" class="form-control bg-dark border-secondary text-light" oninput="validateMeasField(this)" /><div class="invalid-feedback">Número entre 0 y 100</div></div>
+          <div class="col-6"><label class="form-label text-secondary small">Masa muscular (kg)</label><input id="mf-musculo" type="text" inputmode="decimal" class="form-control bg-dark border-secondary text-light" oninput="validateMeasField(this)" /><div class="invalid-feedback">Número positivo (ej: 98,2)</div></div>
+          <div class="col-6"><label class="form-label text-secondary small">Adip. visceral</label><input id="mf-visceral" type="text" inputmode="numeric" class="form-control bg-dark border-secondary text-light" oninput="validateMeasField(this)" /><div class="invalid-feedback">Número entero ≥ 0</div></div>
+          <div class="col-6"><label class="form-label text-secondary small">Masa ósea (kg)</label><input id="mf-osea" type="text" inputmode="decimal" class="form-control bg-dark border-secondary text-light" oninput="validateMeasField(this)" /><div class="invalid-feedback">Número positivo</div></div>
+          <div class="col-6"><label class="form-label text-secondary small">Agua corporal (kg)</label><input id="mf-agua" type="text" inputmode="decimal" class="form-control bg-dark border-secondary text-light" oninput="validateMeasField(this)" /><div class="invalid-feedback">Número positivo (ej: 47,2)</div></div>
+          <div class="col-6"><label class="form-label text-secondary small">TDEE (kcal)</label><input id="mf-tdee" type="text" inputmode="numeric" class="form-control bg-dark border-secondary text-light" oninput="validateMeasField(this)" /><div class="invalid-feedback">Número entero positivo</div></div>
+          <div class="col-6"><label class="form-label text-secondary small">TMB (kcal)</label><input id="mf-tmb" type="text" inputmode="numeric" class="form-control bg-dark border-secondary text-light" oninput="validateMeasField(this)" /><div class="invalid-feedback">Número entero positivo</div></div>
+        </div>
+      </div>
+      <div class="modal-footer border-secondary d-flex justify-content-between align-items-center">
+        <div>
+          <button type="button" id="delete-measurement-btn"
+                  class="btn btn-outline-danger fw-semibold px-3"
+                  style="display:none;"
+                  onclick="deleteMeasurementConfirm()">
+            Eliminar
+          </button>
+        </div>
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary fw-semibold px-4" onclick="saveMeasurementForm()">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL MEDICIONES -->
+<div class="modal fade" id="medicionesModal" tabindex="-1" aria-labelledby="medicionesModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content border-secondary" style="background:#13151f;">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title text-white fw-bold" id="medicionesModalLabel">Historial de Pesajes</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body" style="padding:24px 24px 12px;">
+        <div id="measurements-track" class="measurements-track"></div>
+        <div class="mt-4 px-1 pb-2">
+          <label class="form-label text-secondary small mb-1">Déficit calórico: <span id="deficit-pct-label">20</span>%</label>
+          <input type="range" id="deficit-slider" class="form-range" min="1" max="40" value="20" oninput="updateDeficit(this.value)" />
+          <div id="carbs-warning" class="text-danger mt-1 small" style="display:none;">
+            ⚠️ El déficit seleccionado no deja margen para carbohidratos. Reduce el % de déficit.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ---- Measurement data (persisted in localStorage) ----
+  const _DEFAULT_MEASUREMENTS = [
+    {
+      label: 'Pesaje Nº1',
+      date: '16 de abril de 2026',
+      edad: 20, sexo: 'Hombre', altura: 184, peso: 143,
+      imc: '42,2', grasa: 26, musculo: '98,2',
+      visceral: 29, osea: 4, agua: '47,2', tdee: 4987, tmb: 3117
+    }
+  ];
+
+  function _loadStorage() {
+    try {
+      const raw = localStorage.getItem('nutricion_measurements');
+      return raw ? JSON.parse(raw) : null;
+    } catch(e) { return null; }
+  }
+
+  function _saveStorage() {
+    try {
+      localStorage.setItem('nutricion_measurements', JSON.stringify(measurements));
+      localStorage.setItem('nutricion_selected_index', selectedMeasurementIndex);
+    } catch(e) {}
+  }
+
+  const measurements = _loadStorage() || _DEFAULT_MEASUREMENTS.map(m => ({...m}));
+  let selectedMeasurementIndex = (() => {
+    const stored = parseInt(localStorage.getItem('nutricion_selected_index'), 10);
+    return (!isNaN(stored) && stored < measurements.length) ? stored : 0;
+  })();
+
+  let selectedMeal = '';
+  let selectedConsumption = '';
+  let lastSelectedActivity = '';
+  let lastSelectedActivityBtn = null;
+  let deficitPct = (() => {
+    const stored = parseInt(localStorage.getItem('nutricion_deficit_pct'), 10);
+    return (!isNaN(stored) && stored >= 1 && stored <= 40) ? stored : 32;
+  })();
+
+  const TEMPLATE = `Actúa como un Nutricionista Clínico, Experto en Dietética Deportiva y Analista Biométrico con alta capacidad de visión artificial. Te voy a adjuntar la foto de un plato de comida junto con mi perfil metabólico, mis objetivos, el contexto de mi día y las dimensiones reales de la vajilla.
+
+Tu objetivo es desglosar nutricionalmente el plato minimizando el margen de error, evaluar matemáticamente su impacto y darme directrices accionables para blindar mi masa muscular durante el déficit. Omite introducciones genéricas; ve directo al análisis estructurado.
+
+### 1. PERFIL FÍSICO Y BIOMÉTRICO:
+{BIO_LINE1}{BIO_LINE2}{BIO_LINE3}{TMB_LINE}
+### 2. OBJETIVO DIARIO DE MACRONUTRIENTES (Recomposición Corporal):
+- Gasto Energético Diario (TDEE): {TDEE} kcal
+- Meta Calórica (Déficit {DEFICIT_PCT}%): {CALORIAS_META} kcal / día
+- Meta de Proteína: {PROTEINA_META} g / día
+- Meta de Carbohidratos: {CARBS_META} g / día
+- Meta de Grasas: {GRASA_META} g / día
+
+### 3. CONTEXTO DIARIO Y TIPO DE COMIDA:
+- Tipo de comida: {MEAL}
+- Actividad de HOY: {ACTIVITY}
+- Consumo previo de hoy: {CONSUMPTION}
+
+### 4. DETALLES DE PREPARACIÓN E INGREDIENTES OCULTOS:
+- Método de cocción: 
+- Elementos no visibles en la foto: 
+- Salsas/Aderezos añadidos: 
+
+### 5. DIMENSIONES REALES Y REFERENCIAS DE ESCALA:
+- Tamaño del plato: [El plato mide 24 cm de izquierda a derecha]
+
+### INSTRUCCIONES ESTRICTAS DE ANÁLISIS:
+
+1. IDENTIFICACIÓN Y CALIBRACIÓN MÉTRICA REAL:
+Utiliza obligatoriamente los datos de la SECCIÓN 5 (centímetros del plato) como una regla de escala para calibrar las proporciones tridimensionales de la imagen. Calcula el volumen de cada alimento basándote en esta escala métrica real. Enumera e identifica cada ingrediente.
+
+2. ESTIMACIÓN DE GRAMAJES Y "VARIABLES OCULTAS":
+Estima el peso en gramos de cada ingrediente cruzando tu análisis visual con los datos de la SECCIÓN 4 y 5. Si en la Sección 4 se especifica el método de cocción o ingredientes ocultos, utilízalos como VERDAD ABSOLUTA para el cálculo y añade las calorías correspondientes.
+
+3. DESGLOSE NUTRICIONAL TOTAL (TABLA ESTRICTA):
+Presenta una tabla con: Ingrediente y peso (g) | Calorías (kcal) | Proteínas (g) | Carbohidratos netos (g) | Grasas (g) | Fibra (g).
+Fila final resaltada con el TOTAL absoluto del plato.
+
+4. BALANCE DIARIO RESTANTE:
+Suma lo consumido previamente hoy (sección 3) más este plato. Dime exactamente cuántas kcal, proteínas, carbohidratos y grasas me quedan para el resto del día respecto a mi meta.
+
+5. ADAPTACIÓN AL CONTEXTO (CRÍTICO):
+- ESFUERZO: Según la sección 3 y los datos metabólicos, evalúa la idoneidad. ¿Hay exceso de carbohidratos para un día sedentario o es buen combustible/recuperación para el gym?
+- SÍNTESIS PROTEICA: ¿Supera este plato el umbral de 40-50g necesarios para mantener los {MUSCLE_MASS} kg de masa muscular de mi perfil, o me quedo corto?
+- SACIEDAD: Evalúa la densidad calórica y volumen para asegurar que no pasaré hambre.
+
+6. ACCIÓN INMEDIATA (CORRECCIÓN EN EL PLATO):
+Si el plato descuadra mis metas o el contexto de hoy, dime exactamente qué hacer ANTES de comer. (Ej: "Aparta un tercio del arroz", "Añade un huevo cocido extra porque te faltan proteínas").
+
+7. MANEJO DE INCERTIDUMBRE Y LÍQUIDOS:
+Si a pesar de los datos la perspectiva engaña o hay dudas, dame un rango (ej. 600-800 kcal). 
+Siempre acompaño las comidas con agua, así que ignora las calorías de líquidos.
+
+8. FORMATO DE RESPUESTA (OBLIGATORIO)
+Cero introducciones, cero conclusiones narrativas, cero frases de relleno.
+No expliques tu metodología ni justifiques tus cálculos con párrafos.
+
+RESUMEN FINAL OBLIGATORIO:
+Termina siempre con esta línea exacta, rellenando los valores:
+TOTALES: X kcal | Proteínas: X g | Carbohidratos: X g | Grasas: X g | Fibra: X g`;
+
+  function selectMeal(meal) {
+    selectedMeal = meal;
+    document.getElementById('step1-section').style.display = 'none';
+    if (meal === 'Desayuno') {
+      selectedConsumption = '0 kcal';
+      document.getElementById('activity-step-label').textContent = 'Paso 2 — Actividad de hoy';
+      document.getElementById('step2-section').style.display = 'block';
+    } else {
+      document.getElementById('activity-step-label').textContent = 'Paso 3 — Actividad de hoy';
+      document.getElementById('step-consumption-section').style.display = 'block';
+      document.getElementById('consumption-input').focus();
+    }
+  }
+
+  function confirmConsumption() {
+    const val = document.getElementById('consumption-input').value.trim();
+    selectedConsumption = val !== '' ? val : '0 kcal';
+    document.getElementById('step-consumption-section').style.display = 'none';
+    document.getElementById('step2-section').style.display = 'block';
+  }
+
+  function selectActivity(activity, btn) {
+    lastSelectedActivity = activity;
+    lastSelectedActivityBtn = btn;
+    document.querySelectorAll('#step2-section .choice-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    const m = measurements[selectedMeasurementIndex];
+    const musculoNum = parseFloat(String(m.musculo).replace(',', '.'));
+    const pesoNum    = parseFloat(String(m.peso).replace(',', '.'));
+    const tdeeNum    = parseFloat(String(m.tdee));
+
+    if (isNaN(musculoNum) || isNaN(tdeeNum) || isNaN(pesoNum)) {
+      const outputEl = document.getElementById('prompt-output');
+      outputEl.innerHTML = '<span style="color:#f87171;">&#9888; El pesaje activo no tiene los campos TDEE, Peso o Masa muscular completos. Edítalo en Mediciones antes de generar el prompt.</span>';
+      outputEl.dataset.plain = '';
+      document.getElementById('step2-section').style.display = 'none';
+      document.getElementById('output-section').style.display = 'block';
+      document.getElementById('gemini-btn').style.display = 'none';
+      document.getElementById('restart-fixed-btn').style.display = 'inline-block';
+      return;
+    }
+
+    const escape = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const hl = v => `<span class="highlight">${escape(String(v))}</span>`;
+
+    const bioLine1 = `- Edad: ${m.edad} años | Sexo: ${m.sexo} | Altura: ${m.altura} cm | Peso actual: ${m.peso} kg\n`;
+    const bioLine2 = `- I.M.C.: ${m.imc} | Grasa corporal: ${m.grasa}% | Masa muscular: ${m.musculo} kg\n`;
+    const bioLine3 = `- Adiposidad visceral: ${m.visceral} | Masa ósea: ${m.osea} kg | Agua corporal: ${m.agua} kg\n`;
+    const bioLine4 = `- Metabolismo Basal (TMB): ${m.tmb} kcal\n`;
+
+    // Macro calculations
+    const caloriasMeta = Math.round(tdeeNum * (1 - deficitPct / 100));
+    const proteinaMeta = Math.round(musculoNum * 2.4);
+    const kcalProteina = proteinaMeta * 4;
+    const grasaMeta = Math.round(pesoNum * 0.7);
+    const kcalGrasa = grasaMeta * 9;
+    const kcalRestantes = caloriasMeta - kcalProteina - kcalGrasa;
+    let carbsMeta = Math.round(kcalRestantes / 4);
+    const carbsNegative = carbsMeta < 0;
+    if (carbsNegative) carbsMeta = 0;
+
+    const plain = TEMPLATE
+      .replace('{BIO_LINE1}', bioLine1)
+      .replace('{BIO_LINE2}', bioLine2)
+      .replace('{BIO_LINE3}', bioLine3)
+      .replace('{TMB_LINE}', bioLine4)
+      .replace('{TDEE}', m.tdee)
+      .replace('{DEFICIT_PCT}', deficitPct)
+      .replace('{CALORIAS_META}', caloriasMeta)
+      .replace('{PROTEINA_META}', proteinaMeta)
+      .replace('{CARBS_META}', carbsMeta)
+      .replace('{GRASA_META}', grasaMeta)
+      .replace('{MUSCLE_MASS}', m.musculo)
+      .replace('{MEAL}', selectedMeal)
+      .replace('{ACTIVITY}', activity)
+      .replace('{CONSUMPTION}', selectedConsumption);
+
+    // HTML bio lines with each value+unit highlighted together
+    const bioLine1Html = `- Edad: ${hl(m.edad + ' años')} | Sexo: ${hl(m.sexo)} | Altura: ${hl(m.altura + ' cm')} | Peso actual: ${hl(m.peso + ' kg')}\n`;
+    const bioLine2Html = `- I.M.C.: ${hl(m.imc)} | Grasa corporal: ${hl(m.grasa + '%')} | Masa muscular: ${hl(m.musculo + ' kg')}\n`;
+    const bioLine3Html = `- Adiposidad visceral: ${hl(m.visceral)} | Masa ósea: ${hl(m.osea + ' kg')} | Agua corporal: ${hl(m.agua + ' kg')}\n`;
+    const bioLine4Html = `- Metabolismo Basal (TMB): ${hl(m.tmb + ' kcal')}\n`;
+
+    let html = escape(TEMPLATE)
+      .replace('{BIO_LINE1}', bioLine1Html)
+      .replace('{BIO_LINE2}', bioLine2Html)
+      .replace('{BIO_LINE3}', bioLine3Html)
+      .replace('{TMB_LINE}', bioLine4Html)
+      .replace('{TDEE} kcal', hl(m.tdee + ' kcal'))
+      .replace('{DEFICIT_PCT}', String(deficitPct))
+      .replace('{CALORIAS_META} kcal / día', hl(caloriasMeta + ' kcal / día'))
+      .replace('{PROTEINA_META} g / día', hl(proteinaMeta + ' g / día'))
+      .replace('{CARBS_META} g / día', hl(carbsMeta + ' g / día'))
+      .replace('{GRASA_META} g / día', hl(grasaMeta + ' g / día'))
+      .replace('{MUSCLE_MASS}', escape(String(m.musculo)))
+      .replace('{MEAL}', hl(selectedMeal))
+      .replace('{ACTIVITY}', hl(activity))
+      .replace('{CONSUMPTION}', hl(selectedConsumption));
+
+    const outputEl = document.getElementById('prompt-output');
+    outputEl.innerHTML = html;
+    outputEl.dataset.plain = plain;
+
+    const carbsOutWarn = document.getElementById('carbs-output-warning');
+    if (carbsOutWarn) carbsOutWarn.style.display = carbsNegative ? 'block' : 'none';
+
+    document.getElementById('step2-section').style.display = 'none';
+    document.getElementById('output-section').style.display = 'block';
+    document.getElementById('gemini-btn').style.display = 'inline-block';
+    document.getElementById('action-bar').style.display = 'none';
+    document.getElementById('restart-fixed-btn').style.display = 'inline-block';
+  }
+
+  function copyPrompt() {
+    const plain = document.getElementById('prompt-output').dataset.plain;
+    navigator.clipboard.writeText(plain).then(() => {
+      const btn = document.getElementById('copy-btn');
+      btn.textContent = 'Copiado';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = 'Copiar';
+        btn.classList.remove('copied');
+      }, 2000);
+    });
+  }
+
+  function restart() {
+    selectedMeal = '';
+    selectedConsumption = '';
+    lastSelectedActivity = '';
+    lastSelectedActivityBtn = null;
+    document.getElementById('step1-section').style.display = 'block';
+    document.getElementById('step-consumption-section').style.display = 'none';
+    document.getElementById('step2-section').style.display = 'none';
+    document.getElementById('output-section').style.display = 'none';
+    document.getElementById('gemini-btn').style.display = 'none';
+    document.getElementById('action-bar').style.display = 'none';
+    document.getElementById('restart-fixed-btn').style.display = 'none';
+    document.getElementById('copy-btn').textContent = 'Copiar';
+    document.getElementById('copy-btn').classList.remove('copied');
+    document.getElementById('consumption-input').value = '';
+    document.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('active'));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function updateDeficit(val) {
+    deficitPct = parseInt(val, 10);
+    document.getElementById('deficit-pct-label').textContent = deficitPct;
+    try { localStorage.setItem('nutricion_deficit_pct', deficitPct); } catch(e) {}
+    const m = measurements[selectedMeasurementIndex];
+    const musculoNum = parseFloat(String(m.musculo).replace(',', '.'));
+    const pesoNum    = parseFloat(String(m.peso).replace(',', '.'));
+    const tdeeNum    = parseFloat(String(m.tdee));
+    const caloriasMeta = Math.round(tdeeNum * (1 - deficitPct / 100));
+    const proteinaMeta = Math.round(musculoNum * 2.4);
+    const kcalProteina = proteinaMeta * 4;
+    const grasaMeta = Math.round(pesoNum * 0.7);
+    const kcalGrasa = grasaMeta * 9;
+    const kcalRestantes = caloriasMeta - kcalProteina - kcalGrasa;
+    const carbsWarning = document.getElementById('carbs-warning');
+    if (carbsWarning) carbsWarning.style.display = kcalRestantes < 0 ? 'block' : 'none';
+    if (lastSelectedActivity && document.getElementById('output-section').style.display !== 'none') {
+      selectActivity(lastSelectedActivity, lastSelectedActivityBtn);
+    }
+  }
+
+  // ---- Measurements modal ----
+  function renderMeasurements() {
+    const track = document.getElementById('measurements-track');
+    const cards = measurements.map((m, i) => {
+      const sel = i === selectedMeasurementIndex;
+      const btn = sel
+        ? `<button class="btn btn-secondary w-100 btn-sm" disabled>&#10003; Seleccionado</button>`
+        : `<button class="btn btn-primary w-100 btn-sm" onclick="selectMeasurement(${i})">Seleccionar</button>`;
+      return `
+        <div class="measurement-card ${sel ? 'is-selected' : ''}">
+          <div class="px-3 pt-3 pb-2 d-flex align-items-start justify-content-between" style="border-bottom:1px solid #2a2d3a;">
+            <div>
+              <div class="fw-bold text-white">${m.label}</div>
+              <div class="text-secondary" style="font-size:.75rem;">${m.date}</div>
+            </div>
+            <button onclick="openEditForm(${i})"
+                    class="btn btn-outline-secondary btn-sm"
+                    style="font-size:.75rem; padding:2px 10px; flex-shrink:0;">
+              Editar
+            </button>
+          </div>
+          <div class="px-3 py-3 card-data" style="font-size:.82rem; line-height:2; color:#aaa;">
+            <div>Edad: <span class="text-white">${m.edad} años</span> &nbsp;|&nbsp; Sexo: <span class="text-white">${m.sexo}</span></div>
+            <div>Altura: <span class="text-white">${m.altura} cm</span> &nbsp;|&nbsp; Peso: <span class="text-white">${m.peso} kg</span></div>
+            <div>I.M.C.: <span class="text-white">${m.imc}</span></div>
+            <div>Grasa corporal: <span class="text-white">${m.grasa}%</span></div>
+            <div>Masa muscular: <span class="text-white">${m.musculo} kg</span></div>
+            <div>Adip. visceral: <span class="text-white">${m.visceral}</span></div>
+            <div>Masa ósea: <span class="text-white">${m.osea} kg</span></div>
+            <div>Agua corporal: <span class="text-white">${m.agua} kg</span></div>
+            <div>TDEE: <span class="text-white">${m.tdee} kcal</span></div>
+            <div>TMB: <span class="text-white">${m.tmb} kcal</span></div>
+          </div>
+          <div class="px-3 pb-3">${btn}</div>
+        </div>`;
+    }).join('');
+
+    const addCard = `
+      <div class="measurement-card" id="add-measurement-card"
+           style="border-style:dashed; border-color:#444; min-height:100%; justify-content:center; align-items:center; cursor:pointer;"
+           onclick="openAddForm()">
+        <div class="text-center px-3 py-5">
+          <div style="font-size:3rem; color:#444; line-height:1;">+</div>
+          <div class="text-secondary mt-2 fw-semibold" style="font-size:.9rem;">Añadir pesaje</div>
+        </div>
+      </div>`;
+
+    track.innerHTML = cards + addCard;
+  }
+
+  let _editingIndex = -1;
+
+  const _measRules = {
+    'mf-edad':     v => v === '' || (/^\d+$/.test(v) && +v >= 1 && +v <= 120),
+    'mf-sexo':     v => true,
+    'mf-altura':   v => v === '' || (/^\d+$/.test(v) && +v >= 50 && +v <= 300),
+    'mf-peso':     v => v === '' || (/^\d+([.,]\d+)?$/.test(v) && parseFloat(v.replace(',','.')) > 0),
+    'mf-imc':      v => v === '' || (/^\d+([.,]\d+)?$/.test(v) && parseFloat(v.replace(',','.')) > 0),
+    'mf-grasa':    v => v === '' || (/^\d+([.,]\d+)?$/.test(v) && parseFloat(v.replace(',','.')) >= 0 && parseFloat(v.replace(',','.')) <= 100),
+    'mf-musculo':  v => v === '' || (/^\d+([.,]\d+)?$/.test(v) && parseFloat(v.replace(',','.')) > 0),
+    'mf-visceral': v => v === '' || (/^\d+$/.test(v) && +v >= 0),
+    'mf-osea':     v => v === '' || (/^\d+([.,]\d+)?$/.test(v) && parseFloat(v.replace(',','.')) > 0),
+    'mf-agua':     v => v === '' || (/^\d+([.,]\d+)?$/.test(v) && parseFloat(v.replace(',','.')) > 0),
+    'mf-tdee':     v => v === '' || (/^\d+$/.test(v) && +v > 0),
+    'mf-tmb':      v => v === '' || (/^\d+$/.test(v) && +v > 0),
+  };
+
+  function validateMeasField(input) {
+    const rule = _measRules[input.id];
+    const valid = rule ? rule(input.value.trim()) : true;
+    input.classList.toggle('is-invalid', !valid);
+    input.classList.toggle('is-valid', valid);
+    return valid;
+  }
+
+  function validateAllMeasFields() {
+    return Object.keys(_measRules).every(id => {
+      const el = document.getElementById(id);
+      return el ? validateMeasField(el) : true;
+    });
+  }
+
+  let _deleteConfirmPending = false;
+
+  function deleteMeasurementConfirm() {
+    const btn = document.getElementById('delete-measurement-btn');
+    if (!_deleteConfirmPending) {
+      _deleteConfirmPending = true;
+      btn.textContent = '¿Seguro? Pulsa de nuevo';
+      btn.classList.replace('btn-outline-danger', 'btn-danger');
+      return;
+    }
+    // Confirmed: remove the measurement
+    measurements.splice(_editingIndex, 1);
+    // Re-label all remaining measurements
+    measurements.forEach((m, i) => { m.label = `Pesaje Nº${i + 1}`; });
+    if (selectedMeasurementIndex >= measurements.length) {
+      selectedMeasurementIndex = Math.max(0, measurements.length - 1);
+    }
+    _saveStorage();
+    bootstrap.Modal.getInstance(document.getElementById('editMeasurementModal')).hide();
+    renderMeasurements();
+  }
+
+  function openAddForm() {
+    _editingIndex = -1;
+    _deleteConfirmPending = false;
+    document.getElementById('delete-measurement-btn').style.display = 'none';
+    document.getElementById('editModalTitle').textContent = `Nuevo Pesaje Nº${measurements.length + 1}`;
+    ['mf-edad','mf-sexo','mf-altura','mf-peso','mf-imc','mf-grasa',
+     'mf-musculo','mf-visceral','mf-osea','mf-agua','mf-tdee','mf-tmb']
+      .forEach(id => { document.getElementById(id).value = ''; });
+    new bootstrap.Modal(document.getElementById('editMeasurementModal'), { backdrop: false }).show();
+  }
+
+  function openEditForm(i) {
+    _editingIndex = i;
+    _deleteConfirmPending = false;
+    const deleteBtn = document.getElementById('delete-measurement-btn');
+    deleteBtn.style.display = 'inline-block';
+    deleteBtn.textContent = 'Eliminar';
+    deleteBtn.classList.replace('btn-danger', 'btn-outline-danger');
+    const m = measurements[i];
+    const fv = v => (v === '(Vacío)' ? '' : v);
+    document.getElementById('editModalTitle').textContent = `Editar ${m.label}`;
+    document.getElementById('mf-edad').value     = fv(m.edad);
+    document.getElementById('mf-sexo').value     = fv(m.sexo);
+    document.getElementById('mf-altura').value   = fv(m.altura);
+    document.getElementById('mf-peso').value     = fv(m.peso);
+    document.getElementById('mf-imc').value      = fv(m.imc);
+    document.getElementById('mf-grasa').value    = fv(m.grasa);
+    document.getElementById('mf-musculo').value  = fv(m.musculo);
+    document.getElementById('mf-visceral').value = fv(m.visceral);
+    document.getElementById('mf-osea').value     = fv(m.osea);
+    document.getElementById('mf-agua').value     = fv(m.agua);
+    document.getElementById('mf-tdee').value     = fv(m.tdee);
+    document.getElementById('mf-tmb').value      = fv(m.tmb);
+    new bootstrap.Modal(document.getElementById('editMeasurementModal'), { backdrop: false }).show();
+  }
+
+  function saveMeasurementForm() {
+    if (!validateAllMeasFields()) return;
+    const get = id => document.getElementById(id).value.trim();
+    const val = id => { const v = get(id); return v === '' ? '(Vacío)' : v; };
+    const numVal = id => { const v = get(id); return v === '' ? '(Vacío)' : Number(v); };
+    const data = {
+      edad:     numVal('mf-edad'),
+      sexo:     val('mf-sexo'),
+      altura:   numVal('mf-altura'),
+      peso:     numVal('mf-peso'),
+      imc:      val('mf-imc'),
+      grasa:    numVal('mf-grasa'),
+      musculo:  val('mf-musculo'),
+      visceral: numVal('mf-visceral'),
+      osea:     numVal('mf-osea'),
+      agua:     val('mf-agua'),
+      tdee:     numVal('mf-tdee'),
+      tmb:      numVal('mf-tmb'),
+    };
+    bootstrap.Modal.getInstance(document.getElementById('editMeasurementModal')).hide();
+    if (_editingIndex === -1) {
+      const today = new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+      measurements.push({ label: `Pesaje Nº${measurements.length + 1}`, date: today, ...data });
+      _saveStorage();
+      renderMeasurements();
+      setTimeout(() => {
+        const t = document.getElementById('measurements-track');
+        t.scrollTo({ left: t.scrollWidth, behavior: 'smooth' });
+      }, 50);
+    } else {
+      measurements[_editingIndex] = { ...measurements[_editingIndex], ...data };
+      _saveStorage();
+      renderMeasurements();
+    }
+  }
+
+  function selectMeasurement(i) {
+    selectedMeasurementIndex = i;
+    _saveStorage();
+    renderMeasurements();
+    bootstrap.Modal.getInstance(document.getElementById('medicionesModal')).hide();
+    if (lastSelectedActivity && lastSelectedActivityBtn &&
+        document.getElementById('output-section').style.display !== 'none') {
+      selectActivity(lastSelectedActivity, lastSelectedActivityBtn);
+    }
+  }
+
+  document.getElementById('medicionesModal')
+    .addEventListener('show.bs.modal', () => {
+      renderMeasurements();
+      const slider = document.getElementById('deficit-slider');
+      if (slider) {
+        slider.value = deficitPct;
+        updateDeficit(deficitPct);
+      }
+    });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js');
+  }
+</script>
+</body>
+</html>
