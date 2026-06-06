@@ -325,7 +325,7 @@ Tu objetivo es desglosar nutricionalmente el plato minimizando el margen de erro
 ### INSTRUCCIONES ESTRICTAS DE ANÁLISIS:
 
 1. IDENTIFICACIÓN Y CALIBRACIÓN MÉTRICA REAL:
-Utiliza obligatoriamente los datos de la SECCIÓN 5 (centímetros del plato) como una regla de escala para calibrar las proporciones tridimensionales de la imagen. Calcula el volumen de cada alimento basándote en esta escala métrica real. Enumera e identifica cada ingrediente.
+Utiliza obligatoriamente los datos de la SECCIÓN 5 (centímetros del plato o vaso) como una regla de escala para calibrar las proporciones tridimensionales de la imagen. Calcula el volumen de cada alimento basándote en esta escala métrica real. Enumera e identifica cada ingrediente.
 
 2. ESTIMACIÓN DE GRAMAJES Y "VARIABLES OCULTAS":
 Estima el peso en gramos de cada ingrediente cruzando tu análisis visual con los datos de la SECCIÓN 4 y 5. Si en la Sección 4 se especifica el método de cocción o ingredientes ocultos, utilízalos como VERDAD ABSOLUTA para el cálculo y añade las calorías correspondientes.
@@ -357,15 +357,15 @@ LO QUE ME TIENES QUE ENTREGAR:
 
 IMPORTANTE: Debes ejecutar internamente todos los pasos del 1 al 7 sin excepción — identificación métrica, calibración de escala, estimación de gramajes, variables ocultas, desglose nutricional completo y manejo de incertidumbre — ya que son la base de cálculo que garantiza la precisión del resultado final. Sin embargo, no muestres ninguno de esos pasos en tu respuesta. Todo ese razonamiento ocurre en silencio.
 
-En tu respuesta visible devuelve únicamente lo siguiente, en este orden y con este formato:
+En tu respuesta visible devuelve únicamente lo siguiente, en este orden y con un formato claro y directo junto a un diseño de respuesta bonito:
 
-4. BALANCE DIARIO RESTANTE: Lista con exactamente: kcal, proteínas (g), carbohidratos (g) y grasas (g) que me quedan para el resto del día respecto a mi meta. Sin texto adicional.
+1. BALANCE DIARIO RESTANTE: Lista con exactamente: kcal, proteínas (g), carbohidratos (g) y grasas (g) que me quedan para el resto del día respecto a mi meta. Sin texto adicional.
 
-5. ADAPTACIÓN AL CONTEXTO (REDUCIDA): Tres líneas máximo, una por cada punto: ESFUERZO, SÍNTESIS PROTEICA y SACIEDAD. Solo la valoración clave, sin desarrollo.
+2. ADAPTACIÓN AL CONTEXTO: Tres líneas máximo, una por cada punto: ESFUERZO, SÍNTESIS PROTEICA y SACIEDAD. Solo la valoración clave, sin desarrollo.
 
-6. ACCIÓN INMEDIATA: Una o dos frases directas y concretas. Solo lo que debo hacer antes o durante la comida. Sin justificaciones.
+3. ACCIÓN INMEDIATA: Una o dos frases directas y concretas. Solo lo que debo hacer antes o durante la comida. Sin justificaciones.
 
-8. RESUMEN FINAL OBLIGATORIO: La línea exacta obligatoria: TOTALES: X kcal | Proteínas: X g | Carbohidratos: X g | Grasas: X g | Fibra: X g
+4. RESUMEN FINAL OBLIGATORIO: La línea exacta obligatoria: TOTALES: X kcal | Proteínas: X g | Carbohidratos: X g | Grasas: X g | Fibra: X g
 `;
 
   function selectMeal(meal) {
