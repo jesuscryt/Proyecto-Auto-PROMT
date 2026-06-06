@@ -89,17 +89,6 @@
       transition: border-color .18s, color .18s;
     }
     #mediciones-fixed-btn:hover { border-color: #4f8ef7; color: #fff; }
-    #restart-fixed-btn {
-      position: fixed;
-      top: 16px;
-      left: 16px;
-      z-index: 1055;
-      background: #1a1d27;
-      border: 1.5px solid #333;
-      color: #aaa;
-      transition: border-color .18s, color .18s;
-    }
-    #restart-fixed-btn:hover { border-color: #aaa; color: #fff; }
     #editMeasurementModal { z-index: 1065; }
   </style>
 </head>
@@ -109,12 +98,6 @@
 <button id="mediciones-fixed-btn" class="btn btn-sm fw-semibold px-3"
         data-bs-toggle="modal" data-bs-target="#medicionesModal">
   Mediciones
-</button>
-
-<!-- BOTÓN FIJO EMPEZAR DE NUEVO -->
-<button id="restart-fixed-btn" class="btn btn-sm fw-semibold px-3"
-        style="display:none;" onclick="restart()">
-  Empezar de nuevo
 </button>
 
 <div class="container py-5" style="max-width:860px;">
@@ -406,7 +389,6 @@ TOTALES: X kcal | Proteínas: X g | Carbohidratos: X g | Grasas: X g | Fibra: X 
       document.getElementById('step2-section').style.display = 'none';
       document.getElementById('output-section').style.display = 'block';
       document.getElementById('gemini-btn').style.display = 'none';
-      document.getElementById('restart-fixed-btn').style.display = 'inline-block';
       return;
     }
 
@@ -478,7 +460,6 @@ TOTALES: X kcal | Proteínas: X g | Carbohidratos: X g | Grasas: X g | Fibra: X 
     document.getElementById('output-section').style.display = 'block';
     document.getElementById('gemini-btn').style.display = 'inline-block';
     document.getElementById('action-bar').style.display = 'none';
-    document.getElementById('restart-fixed-btn').style.display = 'inline-block';
   }
 
   function copyPrompt() {
@@ -505,7 +486,6 @@ TOTALES: X kcal | Proteínas: X g | Carbohidratos: X g | Grasas: X g | Fibra: X 
     document.getElementById('output-section').style.display = 'none';
     document.getElementById('gemini-btn').style.display = 'none';
     document.getElementById('action-bar').style.display = 'none';
-    document.getElementById('restart-fixed-btn').style.display = 'none';
     document.getElementById('copy-btn').textContent = 'Copiar';
     document.getElementById('copy-btn').classList.remove('copied');
     document.getElementById('consumption-input').value = '';
