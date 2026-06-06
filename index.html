@@ -46,7 +46,10 @@
       white-space: pre-wrap;
       word-break: break-word;
       color: #d0d0d0;
+      outline: none;
+      cursor: text;
     }
+    #prompt-output:focus { border-color: #4f8ef7; }
 
     .highlight { color: #7fb3ff; font-weight: 600; }
     #copy-btn.copied { background-color: #27ae60 !important; border-color: #27ae60 !important; }
@@ -114,7 +117,7 @@
        href="https://gemini.google.com" target="_blank" rel="noopener"
        class="btn btn-primary fw-bold px-5 py-3 text-white"
        style="display:none; font-size:1rem; border-radius:12px;">
-      Abrir Gemini ↗
+      Abrir Gemini
     </a>
   </div>
 
@@ -176,7 +179,7 @@
     <div id="carbs-output-warning" class="alert alert-danger py-2 small mb-2" style="display:none;">
       ⚠️ El déficit seleccionado no deja margen para carbohidratos. Reduce el % de déficit.
     </div>
-    <pre id="prompt-output"></pre>
+    <pre id="prompt-output" contenteditable="true" spellcheck="false"></pre>
   </div>
 
   <!-- BARRA DE ACCIONES -->
@@ -463,7 +466,8 @@ TOTALES: X kcal | Proteínas: X g | Carbohidratos: X g | Grasas: X g | Fibra: X 
   }
 
   function copyPrompt() {
-    const plain = document.getElementById('prompt-output').dataset.plain;
+    const el = document.getElementById('prompt-output');
+    const plain = el.innerText;
     navigator.clipboard.writeText(plain).then(() => {
       const btn = document.getElementById('copy-btn');
       btn.textContent = 'Copiado';
