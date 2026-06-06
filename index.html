@@ -107,7 +107,7 @@
 <body>
 
 <!-- BOTÓN SCROLL -->
-<button id="scroll-btn" onclick="handleScroll()" title="Bajar" style="display:none;"><svg id="scroll-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,5 8,11 14,5"/></svg></button>
+<button id="scroll-btn" onclick="handleScroll()" title="Bajar"><svg id="scroll-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,5 8,11 14,5"/></svg></button>
 
 <div class="container py-5" style="max-width:860px;">
 
@@ -246,7 +246,7 @@
           <label class="form-label text-secondary small mb-1">Déficit calórico: <span id="deficit-pct-label">20</span>%</label>
           <input type="range" id="deficit-slider" class="form-range" min="1" max="40" value="20" oninput="updateDeficit(this.value)" />
           <div id="carbs-warning" class="text-danger mt-1 small" style="display:none;">
-            ⚠️ El déficit seleccionado no deja margen para carbohidratos. Reduce el % de déficit.
+            El déficit seleccionado no deja margen para carbohidratos. Reduce el % de déficit.
           </div>
         </div>
       </div>
@@ -320,6 +320,7 @@ Tu objetivo es desglosar nutricionalmente el plato minimizando el margen de erro
 
 ### 5. DIMENSIONES REALES Y REFERENCIAS DE ESCALA:
 - Tamaño del plato: [El plato mide 24 cm de izquierda a derecha]
+- Tamaño del vaso: [El vaso mide 12 cm de altura]
 
 ### INSTRUCCIONES ESTRICTAS DE ANÁLISIS:
 
@@ -352,9 +353,20 @@ Siempre acompaño las comidas con agua, así que ignora las calorías de líquid
 Cero introducciones, cero conclusiones narrativas, cero frases de relleno.
 No expliques tu metodología ni justifiques tus cálculos con párrafos.
 
-RESUMEN FINAL OBLIGATORIO:
-Termina siempre con esta línea exacta, rellenando los valores:
-TOTALES: X kcal | Proteínas: X g | Carbohidratos: X g | Grasas: X g | Fibra: X g`;
+LO QUE ME TIENES QUE ENTREGAR:
+
+IMPORTANTE: Debes ejecutar internamente todos los pasos del 1 al 7 sin excepción — identificación métrica, calibración de escala, estimación de gramajes, variables ocultas, desglose nutricional completo y manejo de incertidumbre — ya que son la base de cálculo que garantiza la precisión del resultado final. Sin embargo, no muestres ninguno de esos pasos en tu respuesta. Todo ese razonamiento ocurre en silencio.
+
+En tu respuesta visible devuelve únicamente lo siguiente, en este orden y con este formato:
+
+4. BALANCE DIARIO RESTANTE: Lista con exactamente: kcal, proteínas (g), carbohidratos (g) y grasas (g) que me quedan para el resto del día respecto a mi meta. Sin texto adicional.
+
+5. ADAPTACIÓN AL CONTEXTO (REDUCIDA): Tres líneas máximo, una por cada punto: ESFUERZO, SÍNTESIS PROTEICA y SACIEDAD. Solo la valoración clave, sin desarrollo.
+
+6. ACCIÓN INMEDIATA: Una o dos frases directas y concretas. Solo lo que debo hacer antes o durante la comida. Sin justificaciones.
+
+8. RESUMEN FINAL OBLIGATORIO: La línea exacta obligatoria: TOTALES: X kcal | Proteínas: X g | Carbohidratos: X g | Grasas: X g | Fibra: X g
+`;
 
   function selectMeal(meal) {
     selectedMeal = meal;
