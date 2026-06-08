@@ -168,6 +168,23 @@
     </div>
   </div>
 
+  <!-- PASO 4: Contexto del plato -->
+  <div id="step-context-section" style="display:none;">
+    <hr class="border-secondary my-4" />
+    <p id="context-step-label" class="text-uppercase text-secondary text-center mb-3" style="font-size:.8rem; letter-spacing:2px;">
+      Paso 4 — Contexto del plato (opcional)
+    </p>
+    <div class="d-flex flex-column align-items-center gap-3">
+      <textarea id="context-input"
+                class="form-control bg-dark border-secondary text-light"
+                style="max-width:440px; min-height:80px; resize:vertical;"
+                placeholder="Ej: Pollo a la plancha con arroz..."></textarea>
+      <button class="btn btn-primary fw-semibold px-4 py-2" onclick="confirmContext()">
+        Generar prompt &rarr;
+      </button>
+    </div>
+  </div>
+
   <!-- OUTPUT -->
   <div id="output-section" style="display:none;">
     <hr class="border-secondary my-4" />
@@ -290,6 +307,7 @@
   let selectedConsumption = '';
   let lastSelectedActivity = '';
   let lastSelectedActivityBtn = null;
+  let selectedContext = '';
   let deficitPct = (() => {
     const stored = parseInt(localStorage.getItem('nutricion_deficit_pct'), 10);
     return (!isNaN(stored) && stored >= 1 && stored <= 40) ? stored : 32;
@@ -313,10 +331,8 @@ Tu objetivo es desglosar nutricionalmente el plato minimizando el margen de erro
 - Actividad de HOY: {ACTIVITY}
 - Consumo restante de hoy: {CONSUMPTION}
 
-### 4. DETALLES DE PREPARACIÓN E INGREDIENTES OCULTOS:
-- Método de cocción: 
-- Elementos no visibles en la foto: 
-- Salsas/Aderezos añadidos: 
+### 4. CONTEXTO DEL PLATO:
+- Contexto: {CONTEXT}
 
 ### 5. DIMENSIONES REALES Y REFERENCIAS DE ESCALA:
 - Tamaño del plato: [El plato mide 24 cm de izquierda a derecha]
@@ -328,7 +344,7 @@ Tu objetivo es desglosar nutricionalmente el plato minimizando el margen de erro
 Utiliza obligatoriamente los datos de la SECCIÓN 5 (centímetros del plato o vaso) como una regla de escala para calibrar las proporciones tridimensionales de la imagen. Calcula el volumen de cada alimento basándote en esta escala métrica real. Enumera e identifica cada ingrediente.
 
 2. ESTIMACIÓN DE GRAMAJES Y "VARIABLES OCULTAS":
-Estima el peso en gramos de cada ingrediente cruzando tu análisis visual con los datos de la SECCIÓN 4 y 5. Si en la Sección 4 se especifica el método de cocción o ingredientes ocultos, utilízalos como VERDAD ABSOLUTA para el cálculo y añade las calorías correspondientes.
+Estima el peso en gramos de cada ingrediente cruzando tu análisis visual con los datos de la SECCIÓN 4 y 5. Si en la Sección 4 se especifica contexto adicional del plato (ingredientes, método de cocción, aderezos, etc.), utilízalo como VERDAD ABSOLUTA para el cálculo y añade las calorías correspondientes.
 
 3. DESGLOSE NUTRICIONAL TOTAL (TABLA ESTRICTA):
 Presenta una tabla con: Ingrediente y peso (g) | Calorías (kcal) | Proteínas (g) | Carbohidratos netos (g) | Grasas (g) | Fibra (g).
@@ -355,7 +371,7 @@ No expliques tu metodología ni justifiques tus cálculos con párrafos.
 
 LO QUE ME TIENES QUE ENTREGAR:
 
-IMPORTANTE: Debes ejecutar internamente todos los pasos del 1 al 7 sin excepción — identificación métrica, calibración de escala, estimación de gramajes, variables ocultas, desglose nutricional completo y manejo de incertidumbre — ya que son la base de cálculo que garantiza la precisión del resultado final. Sin embargo, no muestres ninguno de esos pasos en tu respuesta. Todo ese razonamiento ocurre en silencio.
+IMPORTANTE: Debes ejecutar internamente todos los pasos del 1 al 8 sin excepción — identificación métrica, calibración de escala, estimación de gramajes, variables ocultas, desglose nutricional completo y manejo de incertidumbre — ya que son la base de cálculo que garantiza la precisión del resultado final. Sin embargo, no muestres ninguno de esos pasos en tu respuesta. Todo ese razonamiento ocurre en silencio.
 
 En tu respuesta visible devuelve únicamente lo siguiente, en este orden y con un formato claro y directo junto a un diseño de respuesta bonito:
 
@@ -374,9 +390,11 @@ En tu respuesta visible devuelve únicamente lo siguiente, en este orden y con u
     if (meal === 'Desayuno') {
       selectedConsumption = '0 kcal';
       document.getElementById('activity-step-label').textContent = 'Paso 2 — Actividad de hoy';
+      document.getElementById('context-step-label').textContent = 'Paso 3 — Contexto del plato (opcional)';
       document.getElementById('step2-section').style.display = 'block';
     } else {
       document.getElementById('activity-step-label').textContent = 'Paso 3 — Actividad de hoy';
+      document.getElementById('context-step-label').textContent = 'Paso 4 — Contexto del plato (opcional)';
       document.getElementById('step-consumption-section').style.display = 'block';
       document.getElementById('consumption-input').focus();
     }
@@ -410,6 +428,25 @@ En tu respuesta visible devuelve únicamente lo siguiente, en este orden y con u
       return;
     }
 
+    document.getElementById('step2-section').style.display = 'none';
+    document.getElementById('step-context-section').style.display = 'block';
+  }
+
+  function confirmContext() {
+    const val = document.getElementById('context-input').value.trim();
+    selectedContext = val !== '' ? val : 'Sin contexto adicional';
+    document.getElementById('step-context-section').style.display = 'none';
+    _generateOutput();
+  }
+
+  function _generateOutput() {
+    const m = measurements[selectedMeasurementIndex];
+    const musculoNum = parseFloat(String(m.musculo).replace(',', '.'));
+    const pesoNum    = parseFloat(String(m.peso).replace(',', '.'));
+    const tdeeNum    = parseFloat(String(m.tdee));
+
+    if (isNaN(musculoNum) || isNaN(tdeeNum) || isNaN(pesoNum)) { return; }
+
     const escape = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     const hl = v => `<span class="highlight">${escape(String(v))}</span>`;
 
@@ -442,8 +479,9 @@ En tu respuesta visible devuelve únicamente lo siguiente, en este orden y con u
       .replace('{GRASA_META}', grasaMeta)
       .replace('{MUSCLE_MASS}', m.musculo)
       .replace('{MEAL}', selectedMeal)
-      .replace('{ACTIVITY}', activity)
-      .replace('{CONSUMPTION}', selectedConsumption);
+      .replace('{ACTIVITY}', lastSelectedActivity)
+      .replace('{CONSUMPTION}', selectedConsumption)
+      .replace('{CONTEXT}', selectedContext);
 
     // HTML bio lines with each value+unit highlighted together
     const bioLine1Html = `- Edad: ${hl(m.edad + ' años')} | Sexo: ${hl(m.sexo)} | Altura: ${hl(m.altura + ' cm')} | Peso actual: ${hl(m.peso + ' kg')}\n`;
@@ -464,8 +502,9 @@ En tu respuesta visible devuelve únicamente lo siguiente, en este orden y con u
       .replace('{GRASA_META} g / día', hl(grasaMeta + ' g / día'))
       .replace('{MUSCLE_MASS}', escape(String(m.musculo)))
       .replace('{MEAL}', hl(selectedMeal))
-      .replace('{ACTIVITY}', hl(activity))
-      .replace('{CONSUMPTION}', hl(selectedConsumption));
+      .replace('{ACTIVITY}', hl(lastSelectedActivity))
+      .replace('{CONSUMPTION}', hl(selectedConsumption))
+      .replace('{CONTEXT}', hl(selectedContext));
 
     const outputEl = document.getElementById('prompt-output');
     outputEl.innerHTML = html;
@@ -474,7 +513,7 @@ En tu respuesta visible devuelve únicamente lo siguiente, en este orden y con u
     const carbsOutWarn = document.getElementById('carbs-output-warning');
     if (carbsOutWarn) carbsOutWarn.style.display = carbsNegative ? 'block' : 'none';
 
-    document.getElementById('step2-section').style.display = 'none';
+    document.getElementById('step-context-section').style.display = 'none';
     document.getElementById('output-section').style.display = 'block';
     document.getElementById('gemini-btn').style.display = 'inline-block';
     document.getElementById('action-bar').style.display = 'none';
@@ -497,17 +536,20 @@ En tu respuesta visible devuelve únicamente lo siguiente, en este orden y con u
   function restart() {
     selectedMeal = '';
     selectedConsumption = '';
+    selectedContext = '';
     lastSelectedActivity = '';
     lastSelectedActivityBtn = null;
     document.getElementById('step1-section').style.display = 'block';
     document.getElementById('step-consumption-section').style.display = 'none';
     document.getElementById('step2-section').style.display = 'none';
+    document.getElementById('step-context-section').style.display = 'none';
     document.getElementById('output-section').style.display = 'none';
     document.getElementById('gemini-btn').style.display = 'none';
     document.getElementById('action-bar').style.display = 'none';
     document.getElementById('copy-btn').textContent = 'Copiar';
     document.getElementById('copy-btn').classList.remove('copied');
     document.getElementById('consumption-input').value = '';
+    document.getElementById('context-input').value = '';
     document.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('active'));
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -529,7 +571,7 @@ En tu respuesta visible devuelve únicamente lo siguiente, en este orden y con u
     const carbsWarning = document.getElementById('carbs-warning');
     if (carbsWarning) carbsWarning.style.display = kcalRestantes < 0 ? 'block' : 'none';
     if (lastSelectedActivity && document.getElementById('output-section').style.display !== 'none') {
-      selectActivity(lastSelectedActivity, lastSelectedActivityBtn);
+      _generateOutput();
     }
   }
 
@@ -716,7 +758,7 @@ En tu respuesta visible devuelve únicamente lo siguiente, en este orden y con u
     bootstrap.Modal.getInstance(document.getElementById('medicionesModal')).hide();
     if (lastSelectedActivity && lastSelectedActivityBtn &&
         document.getElementById('output-section').style.display !== 'none') {
-      selectActivity(lastSelectedActivity, lastSelectedActivityBtn);
+      _generateOutput();
     }
   }
 
