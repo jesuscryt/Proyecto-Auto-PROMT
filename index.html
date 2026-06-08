@@ -141,11 +141,22 @@
       Paso 2 - Consumo restante de hoy
     </p>
     <div class="d-flex flex-column align-items-center gap-3">
-      <input type="text" id="consumption-input"
-             class="form-control bg-dark border-secondary text-light"
-             style="max-width:440px;"
-             placeholder="Ej: Me quedan 1200 kcal y 80g de proteína"
-             onkeydown="if(event.key==='Enter') confirmConsumption()" />
+      <div style="position:relative; max-width:440px; width:100%;">
+        <input type="text" id="consumption-input"
+               class="form-control bg-dark border-secondary text-light"
+               style="padding-right:38px;"
+               placeholder="Ej: Me quedan 1200 kcal y 80g de proteína"
+               onkeydown="if(event.key==='Enter') confirmConsumption()" />
+        <button onclick="document.getElementById('consumption-input').value=''"
+                title="Borrar"
+                style="position:absolute; right:8px; top:50%; transform:translateY(-50%); width:22px; height:22px; border-radius:50%; background:transparent; border:1.5px solid #555; color:#333; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; transition:border-color .15s, color .15s;"
+                onmouseover="this.style.borderColor='#888';this.style.color='#aaa';"
+                onmouseout="this.style.borderColor='#555';this.style.color='#333';">
+          <svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+            <line x1="1" y1="1" x2="9" y2="9"/><line x1="9" y1="1" x2="1" y2="9"/>
+          </svg>
+        </button>
+      </div>
       <button class="btn btn-primary fw-semibold px-4 py-2" onclick="confirmConsumption()">
         Continuar &rarr;
       </button>
