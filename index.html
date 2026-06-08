@@ -134,17 +134,17 @@
     </div>
   </div>
 
-  <!-- PASO 2: Consumo previo (solo si no es Desayuno) -->
+  <!-- PASO 2: Consumo restante (solo si no es Desayuno) -->
   <div id="step-consumption-section" style="display:none;">
     <hr class="border-secondary my-4" />
     <p class="text-uppercase text-secondary text-center mb-3" style="font-size:.8rem; letter-spacing:2px;">
-      Paso 2 - Consumo previo de hoy
+      Paso 2 - Consumo restante de hoy
     </p>
     <div class="d-flex flex-column align-items-center gap-3">
       <input type="text" id="consumption-input"
              class="form-control bg-dark border-secondary text-light"
              style="max-width:440px;"
-             placeholder="Ej: Llevo consumidas 1200 kcal y 80g de proteína"
+             placeholder="Ej: Me quedan 1200 kcal y 80g de proteína"
              onkeydown="if(event.key==='Enter') confirmConsumption()" />
       <button class="btn btn-primary fw-semibold px-4 py-2" onclick="confirmConsumption()">
         Continuar &rarr;
