@@ -187,10 +187,21 @@
       Paso 4 — Contexto del plato (opcional)
     </p>
     <div class="d-flex flex-column align-items-center gap-3">
-      <textarea id="context-input"
-                class="form-control bg-dark border-secondary text-light"
-                style="max-width:440px; min-height:80px; resize:vertical;"
-                placeholder="Ej: Pollo a la plancha con arroz..."></textarea>
+      <div style="position:relative; max-width:440px; width:100%;">
+        <textarea id="context-input"
+                  class="form-control bg-dark border-secondary text-light"
+                  style="min-height:80px; resize:vertical; padding-right:38px;"
+                  placeholder="Ej: Pollo a la plancha con arroz..."></textarea>
+        <button onclick="document.getElementById('context-input').value=''"
+                title="Borrar"
+                style="position:absolute; right:8px; top:10px; width:22px; height:22px; border-radius:50%; background:transparent; border:1.5px solid #555; color:#333; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; transition:border-color .15s, color .15s;"
+                onmouseover="this.style.borderColor='#888';this.style.color='#aaa';"
+                onmouseout="this.style.borderColor='#555';this.style.color='#333';">
+          <svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+            <line x1="1" y1="1" x2="9" y2="9"/><line x1="9" y1="1" x2="1" y2="9"/>
+          </svg>
+        </button>
+      </div>
       <button class="btn btn-primary fw-semibold px-4 py-2" onclick="confirmContext()">
         Generar prompt
       </button>
@@ -290,8 +301,8 @@
       label: 'Pesaje Nº1',
       date: '16 de abril de 2026',
       edad: 20, sexo: 'Hombre', altura: 184, peso: 143,
-      imc: '42,2', grasa: 26, musculo: '98,2',
-      visceral: 29, osea: 4, agua: '47,2', tdee: 4987, tmb: 3117
+      imc: '42,2', grasa: 40, musculo: '43,5',
+      visceral: 29, osea: 4, agua: '47,2', tdee: 3400, tmb: 2350
     }
   ];
 
@@ -322,7 +333,7 @@
   let selectedContext = '';
   let deficitPct = (() => {
     const stored = parseInt(localStorage.getItem('nutricion_deficit_pct'), 10);
-    return (!isNaN(stored) && stored >= 1 && stored <= 40) ? stored : 32;
+    return (!isNaN(stored) && stored >= 1 && stored <= 40) ? stored : 25;
   })();
 
   const TEMPLATE = `Actúa como un Nutricionista Clínico, Experto en Dietética Deportiva y Analista Biométrico con alta capacidad de visión artificial. Te voy a adjuntar la foto de un plato de comida junto con mi perfil metabólico, mis objetivos, el contexto de mi día y las dimensiones reales de la vajilla.
@@ -469,9 +480,9 @@ En tu respuesta visible devuelve únicamente lo siguiente, en este orden y con u
 
     // Macro calculations
     const caloriasMeta = Math.round(tdeeNum * (1 - deficitPct / 100));
-    const proteinaMeta = Math.round(musculoNum * 2.4);
+    const proteinaMeta = Math.round((parseFloat(m.altura) - 100) * 2);
     const kcalProteina = proteinaMeta * 4;
-    const grasaMeta = Math.round(pesoNum * 0.7);
+    const grasaMeta = Math.round(pesoNum * 0.45);
     const kcalGrasa = grasaMeta * 9;
     const kcalRestantes = caloriasMeta - kcalProteina - kcalGrasa;
     let carbsMeta = Math.round(kcalRestantes / 4);
@@ -575,9 +586,9 @@ En tu respuesta visible devuelve únicamente lo siguiente, en este orden y con u
     const pesoNum    = parseFloat(String(m.peso).replace(',', '.'));
     const tdeeNum    = parseFloat(String(m.tdee));
     const caloriasMeta = Math.round(tdeeNum * (1 - deficitPct / 100));
-    const proteinaMeta = Math.round(musculoNum * 2.4);
+    const proteinaMeta = Math.round((parseFloat(m.altura) - 100) * 2);
     const kcalProteina = proteinaMeta * 4;
-    const grasaMeta = Math.round(pesoNum * 0.7);
+    const grasaMeta = Math.round(pesoNum * 0.45);
     const kcalGrasa = grasaMeta * 9;
     const kcalRestantes = caloriasMeta - kcalProteina - kcalGrasa;
     const carbsWarning = document.getElementById('carbs-warning');
